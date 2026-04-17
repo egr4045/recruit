@@ -1,0 +1,100 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["recruit"]
+}
+
+model AdminUser {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@schema("recruit")
+}
+
+model TimeSlot {
+  id          Int          @id @default(autoincrement())
+  startsAt    DateTime
+  durationMin Int          @default(60)
+  isAvailable Boolean      @default(true)
+  application Application?
+  createdAt   DateTime     @default(now())
+
+  @@index([startsAt])
+  @@index([isAvailable])
+  @@schema("recruit")
+}
+
+model Application {
+  id                Int               @id @default(autoincrement())
+  slotId            Int               @unique
+  slot              TimeSlot          @relation(fields: [slotId], references: [id])
+  fullName          String
+  email             String
+  phone             String
+  position          String
+  grade             String
+  resumeUrl         String?
+  industries        String
+  expectedSalary    String?
+  painPoints        String
+  workFormats       String
+  willingToRelocate Boolean           @default(false)
+  relocateTo        String?
+  strengths         String
+  weaknesses        String
+  status            ApplicationStatus @default(PENDING)
+  paymentLink       String?
+  adminNotes        String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  candidateProfile CandidateProfile?
+
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+  @@schema("recruit")
+}
+
+enum ApplicationStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  COMPLETED
+
+  @@schema("recruit")
+}
+
+model CandidateProfile {
+  id              Int            @id @default(autoincrement())
+  applicationId   Int            @unique
+  application     Application    @relation(fields: [applicationId], references: [id])
+  technicalSkills String?
+  softSkills      String?
+  languages       String?
+  industryExp     String?
+  interviewNotes  String?
+  overallRating   Int?
+  tags            CandidateTag[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@schema("recruit")
+}
+
+model CandidateTag {
+  id        Int              @id @default(autoincrement())
+  tag       String
+  profileId Int
+  profile   CandidateProfile @relation(fields: [profileId], references: [id])
+
+  @@index([tag])
+  @@unique([profileId, tag])
+  @@schema("recruit")
+}

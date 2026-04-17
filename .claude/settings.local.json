@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@14 . --typescript --tailwind --app --no-eslint --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npx create-next-app@14 . --typescript --tailwind --app --no-eslint --no-src-dir --import-alias \"@/*\" --yes --force)",
+      "Read(//d/dev/**)",
+      "Bash(npx create-next-app@14 recruit-tmp --typescript --tailwind --app --no-eslint --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npm run:*)",
+      "Bash(node -e \"const pkg = require\\('/d/dev/recruit/node_modules/@prisma/adapter-libsql/dist/index.js'\\); console.log\\(Object.keys\\(pkg\\)\\)\")",
+      "Bash(node -e \"const m = require\\('/d/dev/recruit/node_modules/@prisma/adapter-libsql/dist/index-node.js'\\); console.log\\(Object.keys\\(m\\)\\)\")",
+      "Bash(npx ts-node --esm --skipProject -e ':*)",
+      "Bash(node /d/dev/recruit/scripts/seed.mjs)",
+      "Bash(ls /d/dev/recruit/prisma/*.db)",
+      "Bash(ls /d/dev/recruit/*.db)",
+      "Bash(sqlite3 /d/dev/recruit/prisma/dev.db \".tables\")",
+      "Bash(sqlite3 /d/dev/recruit/dev.db \".tables\")",
+      "Bash(node -e ':*)",
+      "Bash(curl -s http://localhost:3000/api/slots)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/admin/applications)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin123\"}' -c /tmp/cookies.txt)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/admin/applications -b /tmp/cookies.txt)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/admin/login)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
+      "Bash(node -e \"const m = require\\('/d/dev/recruit/node_modules/@prisma/adapter-pg'\\); console.log\\(Object.keys\\(m\\)\\)\")",
+      "Bash(node -e \"const m = require\\('/d/dev/recruit/node_modules/@prisma/adapter-pg/dist/index.js'\\); console.log\\(Object.keys\\(m\\)\\)\")",
+      "Bash(node /d/dev/recruit/scripts/check-db.mjs)",
+      "Bash(powershell -Command \"Start-Sleep -Seconds 10\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3005/)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":3000 :3001 :3002 :3003 :3004\")",
+      "Bash(findstr LISTENING)",
+      "Bash(curl -s -o /dev/null -w \"sobies=%{http_code} admin=%{http_code}\\\\n\" http://localhost:3005/sobies)",
+      "Bash(curl -s -o /dev/null -w \"admin=%{http_code}\\\\n\" http://localhost:3005/admin)"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+services:
+  app:
+    image: recruit-app
+    container_name: recruit-app
+    restart: unless-stopped
+    ports:
+      - "3002:3000"       # внешний 3002 → внутренний 3000
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+    extra_hosts:
+      # чтобы контейнер мог достучаться до PostgreSQL на хосте
+      - "host.docker.internal:host-gateway"
+    network_mode: bridge

@@ -16,8 +16,16 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL}
+      NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+    volumes:
+      - uploads_data:/app/public/uploads
     extra_hosts:
       # чтобы контейнер мог достучаться до PostgreSQL на хосте
       - "host.docker.internal:host-gateway"
     network_mode: bridge
+
+volumes:
+  uploads_data:

@@ -7,6 +7,7 @@ import { WorkFormatGroup } from "./fields/WorkFormatGroup";
 import { ResumeUpload } from "./fields/ResumeUpload";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { formatPhone } from "@/lib/phoneFormat";
 
 type Slot = { id: number; startsAt: string; durationMin: number };
 
@@ -99,11 +100,36 @@ export function QuestionnaireStep({ slot, onBack, onSuccess }: Props) {
           <Field label="ФИО *" error={errors.fullName?.message}>
             <input {...register("fullName")} className={inputClass} placeholder="Иван Иванов" />
           </Field>
-          <Field label="Email *" error={errors.email?.message}>
-            <input {...register("email")} type="email" className={inputClass} placeholder="ivan@example.com" />
+          <Field
+            label="Telegram *"
+            hint="Укажите @username — мы будем общаться через бота"
+            error={errors.telegram?.message}
+          >
+            <input {...register("telegram")} className={inputClass} placeholder="@username" />
           </Field>
-          <Field label="Телефон *" error={errors.phone?.message}>
-            <input {...register("phone")} className={inputClass} placeholder="+7 900 000-00-00" />
+          <Field label="Email" error={errors.email?.message}>
+            <input {...register("email")} type="email" className={inputClass} placeholder="ivan@example.com (необязательно)" />
+          </Field>
+          <Field label="Телефон" error={errors.phone?.message}>
+            <Controller
+              name="phone"
+              control={control}
+              render={({ field }) => {
+                const { display } = field.value ? formatPhone(field.value) : { display: "" };
+                return (
+                  <input
+                    value={display}
+                    onChange={(e) => {
+                      const { digits } = formatPhone(e.target.value);
+                      field.onChange(digits || undefined);
+                    }}
+                    className={inputClass}
+                    placeholder="+7 (900) 000-00-00 (необязательно)"
+                    inputMode="numeric"
+                  />
+                );
+              }}
+            />
           </Field>
         </div>
       </div>

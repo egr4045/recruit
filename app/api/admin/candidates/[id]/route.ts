@@ -25,7 +25,7 @@ export async function GET(
     softSkills: profile.softSkills ? JSON.parse(profile.softSkills) : [],
     languages: profile.languages ? JSON.parse(profile.languages) : [],
     industryExp: profile.industryExp ? JSON.parse(profile.industryExp) : [],
-    tags: profile.tags.map((t) => t.tag),
+    tags: profile.tags.map((t) => ({ tag: t.tag, category: t.category })),
     application: {
       ...profile.application,
       industries: JSON.parse(profile.application.industries),
@@ -62,15 +62,19 @@ export async function PATCH(
     },
   });
 
-  // Sync tags
+  // Sync tags — accepts { tag, category }[] or string[] (legacy)
   if (tags !== undefined) {
     await prisma.candidateTag.deleteMany({ where: { profileId: Number(id) } });
     if (tags.length > 0) {
       await prisma.candidateTag.createMany({
-        data: (tags as string[]).map((tag: string) => ({
-          profileId: Number(id),
-          tag: tag.toLowerCase().trim(),
-        })),
+        data: (tags as Array<{ tag: string; category?: string } | string>).map((t) => {
+          const isObj = typeof t === "object" && t !== null;
+          return {
+            profileId: Number(id),
+            tag: (isObj ? (t as { tag: string }).tag : String(t)).toLowerCase().trim(),
+            category: isObj ? ((t as { category?: string }).category || "other") : "other",
+          };
+        }),
       });
     }
   }

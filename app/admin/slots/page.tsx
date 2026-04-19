@@ -11,6 +11,9 @@ import {
   isSameDay,
   addMonths,
   subMonths,
+  parseISO,
+  isWeekend,
+  addMinutes,
 } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Badge } from "@/components/ui/Badge";
@@ -23,14 +26,59 @@ type SlotAdmin = {
   application: { id: number; fullName: string; status: string } | null;
 };
 
+function buildBulkSlots(
+  dateFrom: string,
+  dateTo: string,
+  timeFrom: string,
+  timeTo: string,
+  stepMin: number,
+  skipWeekends: boolean
+): string[] {
+  if (!dateFrom || !dateTo || !timeFrom || !timeTo) return [];
+  const start = parseISO(dateFrom);
+  const end = parseISO(dateTo);
+  if (start > end) return [];
+
+  const days = eachDayOfInterval({ start, end });
+  const slots: string[] = [];
+
+  const [fromH, fromM] = timeFrom.split(":").map(Number);
+  const [toH, toM] = timeTo.split(":").map(Number);
+
+  for (const day of days) {
+    if (skipWeekends && isWeekend(day)) continue;
+    let current = new Date(day);
+    current.setHours(fromH, fromM, 0, 0);
+    const limit = new Date(day);
+    limit.setHours(toH, toM, 0, 0);
+
+    while (current <= limit) {
+      slots.push(current.toISOString());
+      current = addMinutes(current, stepMin);
+    }
+  }
+  return slots;
+}
+
 export default function SlotsPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [slots, setSlots] = useState<SlotAdmin[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
   const [newTime, setNewTime] = useState("10:00");
   const [adding, setAdding] = useState(false);
+
+  // Bulk form state
+  const [bulkDateFrom, setBulkDateFrom] = useState("");
+  const [bulkDateTo, setBulkDateTo] = useState("");
+  const [bulkTimeFrom, setBulkTimeFrom] = useState("10:00");
+  const [bulkTimeTo, setBulkTimeTo] = useState("18:00");
+  const [bulkStep, setBulkStep] = useState(60);
+  const [bulkDuration, setBulkDuration] = useState(60);
+  const [bulkSkipWeekends, setBulkSkipWeekends] = useState(true);
+  const [bulkAdding, setBulkAdding] = useState(false);
 
   async function fetchSlots() {
     setLoading(true);
@@ -96,11 +144,34 @@ export default function SlotsPage() {
     fetchSlots();
   }
 
+  const bulkPreview = buildBulkSlots(bulkDateFrom, bulkDateTo, bulkTimeFrom, bulkTimeTo, bulkStep, bulkSkipWeekends);
+
+  async function addBulkSlots() {
+    if (bulkPreview.length === 0) return;
+    setBulkAdding(true);
+    await fetch("/api/admin/slots", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slots: bulkPreview, durationMin: bulkDuration }),
+    });
+    setBulkAdding(false);
+    setShowBulkModal(false);
+    fetchSlots();
+  }
+
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Управление слотами</h1>
-        <p className="text-sm text-gray-400 mt-1">Нажмите на дату чтобы увидеть слоты или добавить новый</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Управление слотами</h1>
+          <p className="text-sm text-gray-400 mt-1">Нажмите на дату чтобы увидеть слоты или добавить новый</p>
+        </div>
+        <button
+          onClick={() => setShowBulkModal(true)}
+          className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+        >
+          + Добавить диапазоном
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -158,7 +229,7 @@ export default function SlotsPage() {
                   onClick={() => setShowAddModal(true)}
                   className="bg-black text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
                 >
-                  + Добавить
+                  + Один слот
                 </button>
               </div>
 
@@ -215,7 +286,7 @@ export default function SlotsPage() {
         </div>
       </div>
 
-      {/* Add slot modal */}
+      {/* Add single slot modal */}
       {showAddModal && selectedDate && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
@@ -240,6 +311,146 @@ export default function SlotsPage() {
               <button
                 onClick={() => setShowAddModal(false)}
                 className="flex-1 bg-gray-100 text-gray-700 rounded-xl py-2.5 text-sm font-medium"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk add modal */}
+      {showBulkModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-5">Добавить слоты диапазоном</h3>
+
+            <div className="space-y-4">
+              {/* Date range */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Диапазон дат</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">С</label>
+                    <input
+                      type="date"
+                      value={bulkDateFrom}
+                      onChange={(e) => setBulkDateFrom(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">По</label>
+                    <input
+                      type="date"
+                      value={bulkDateTo}
+                      min={bulkDateFrom}
+                      onChange={(e) => setBulkDateTo(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Time range */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Диапазон времени</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">С</label>
+                    <input
+                      type="time"
+                      value={bulkTimeFrom}
+                      onChange={(e) => setBulkTimeFrom(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">До</label>
+                    <input
+                      type="time"
+                      value={bulkTimeTo}
+                      onChange={(e) => setBulkTimeTo(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Step and duration */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Шаг между слотами</label>
+                  <select
+                    value={bulkStep}
+                    onChange={(e) => setBulkStep(Number(e.target.value))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  >
+                    <option value={30}>30 минут</option>
+                    <option value={60}>1 час</option>
+                    <option value={90}>1.5 часа</option>
+                    <option value={120}>2 часа</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Длительность слота</label>
+                  <select
+                    value={bulkDuration}
+                    onChange={(e) => setBulkDuration(Number(e.target.value))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  >
+                    <option value={30}>30 минут</option>
+                    <option value={60}>1 час</option>
+                    <option value={90}>1.5 часа</option>
+                    <option value={120}>2 часа</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Skip weekends */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={bulkSkipWeekends}
+                  onChange={(e) => setBulkSkipWeekends(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-gray-700">Пропускать выходные (сб, вс)</span>
+              </label>
+
+              {/* Preview */}
+              {bulkPreview.length > 0 ? (
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-sm font-medium text-gray-800 mb-2">
+                    Будет создано: <span className="text-black font-semibold">{bulkPreview.length}</span> слотов
+                  </p>
+                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                    {bulkPreview.slice(0, 30).map((iso) => (
+                      <span key={iso} className="text-xs bg-white border border-gray-200 px-2 py-0.5 rounded-lg text-gray-600">
+                        {format(new Date(iso), "d.MM HH:mm")}
+                      </span>
+                    ))}
+                    {bulkPreview.length > 30 && (
+                      <span className="text-xs text-gray-400">+{bulkPreview.length - 30} ещё...</span>
+                    )}
+                  </div>
+                </div>
+              ) : (bulkDateFrom && bulkDateTo) ? (
+                <p className="text-sm text-gray-400">Нет слотов в выбранном диапазоне</p>
+              ) : null}
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={addBulkSlots}
+                disabled={bulkAdding || bulkPreview.length === 0}
+                className="flex-1 bg-black text-white rounded-xl py-2.5 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+              >
+                {bulkAdding ? "Создаём..." : `Создать ${bulkPreview.length > 0 ? bulkPreview.length + " слотов" : ""}`}
+              </button>
+              <button
+                onClick={() => setShowBulkModal(false)}
+                className="flex-1 bg-gray-100 text-gray-700 rounded-xl py-2.5 text-sm font-medium hover:bg-gray-200"
               >
                 Отмена
               </button>

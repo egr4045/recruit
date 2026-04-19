@@ -17,6 +17,7 @@ const slideVariants = {
 export function BookingFlow() {
   const [step, setStep] = useState<Step>("calendar");
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [applicationId, setApplicationId] = useState<number | null>(null);
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -74,7 +75,7 @@ export function BookingFlow() {
             <QuestionnaireStep
               slot={selectedSlot}
               onBack={() => setStep("calendar")}
-              onSuccess={() => setStep("success")}
+              onSuccess={(id) => { setApplicationId(id); setStep("success"); }}
             />
           </motion.div>
         )}
@@ -88,7 +89,7 @@ export function BookingFlow() {
             exit="exit"
             transition={{ duration: 0.2 }}
           >
-            <SuccessStep />
+            <SuccessStep applicationId={applicationId} />
           </motion.div>
         )}
       </AnimatePresence>

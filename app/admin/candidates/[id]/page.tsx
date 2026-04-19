@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 
-type Tag = string;
+type TagEntry = { tag: string; category: string };
+type TagSuggestion = { tag: string; category: string; count: number };
 type SkillEntry = { name: string; level: string };
 type LangEntry = { lang: string; level: string };
 
@@ -17,11 +18,12 @@ type Profile = {
   industryExp: string[];
   interviewNotes: string | null;
   overallRating: number | null;
-  tags: Tag[];
+  tags: TagEntry[];
   application: {
     fullName: string;
-    email: string;
-    phone: string;
+    email: string | null;
+    phone: string | null;
+    telegram: string | null;
     position: string;
     grade: string;
     status: string;
@@ -35,16 +37,51 @@ type Profile = {
 
 const SKILL_LEVELS = ["", "Beginner", "Intermediate", "Advanced", "Expert"];
 
+const CATEGORIES: { value: string; label: string }[] = [
+  { value: "stack", label: "Стек" },
+  { value: "role", label: "Роль" },
+  { value: "industry", label: "Отрасль" },
+  { value: "trait", label: "Особенности" },
+  { value: "status", label: "Статус" },
+  { value: "language", label: "Языки" },
+  { value: "other", label: "Другое" },
+];
+
+const CATEGORY_COLORS: Record<string, string> = {
+  stack: "bg-blue-100 text-blue-700",
+  role: "bg-purple-100 text-purple-700",
+  industry: "bg-orange-100 text-orange-700",
+  trait: "bg-green-100 text-green-700",
+  status: "bg-red-100 text-red-700",
+  language: "bg-yellow-100 text-yellow-700",
+  other: "bg-gray-100 text-gray-700",
+};
+
+function TagBadge({ tag, category, onRemove }: { tag: string; category: string; onRemove: () => void }) {
+  const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
+  const catLabel = CATEGORIES.find((c) => c.value === category)?.label || category;
+  return (
+    <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full ${color}`}>
+      <span className="opacity-60 text-[10px]">{catLabel}</span>
+      #{tag}
+      <button onClick={onRemove} className="opacity-50 hover:opacity-100 text-xs">✕</button>
+    </span>
+  );
+}
+
 export default function CandidateProfilePage() {
   const { id } = useParams();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tagInput, setTagInput] = useState("");
+  const [tagCategory, setTagCategory] = useState("other");
+  const [suggestions, setSuggestions] = useState<TagSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [newSkill, setNewSkill] = useState("");
   const [newSoftSkill, setNewSoftSkill] = useState("");
   const [newLang, setNewLang] = useState("");
-  const [newIndustry, setNewIndustry] = useState("");
+  const suggestRef = useRef<HTMLDivElement>(null);
 
   const fetchProfile = useCallback(async () => {
     const res = await fetch(`/api/admin/candidates/${id}`);
@@ -55,7 +92,26 @@ export default function CandidateProfilePage() {
 
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
-  async function save(updates: Partial<Profile>) {
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  async function fetchSuggestions(q: string) {
+    if (!q && !tagCategory) { setSuggestions([]); return; }
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (tagCategory !== "other") params.set("category", tagCategory);
+    const res = await fetch(`/api/admin/tags?${params}`);
+    if (res.ok) setSuggestions(await res.json());
+  }
+
+  async function save(updates: Partial<Profile & { tags: TagEntry[] }>) {
     if (!profile) return;
     setSaving(true);
     await fetch(`/api/admin/candidates/${id}`, {
@@ -68,6 +124,24 @@ export default function CandidateProfilePage() {
 
   function update<K extends keyof Profile>(key: K, value: Profile[K]) {
     setProfile((prev) => prev ? { ...prev, [key]: value } : prev);
+  }
+
+  function addTag(tag: string, category: string) {
+    if (!profile) return;
+    const normalized = tag.trim().toLowerCase();
+    if (!normalized || profile.tags.some((t) => t.tag === normalized)) return;
+    const updated = [...profile.tags, { tag: normalized, category }];
+    update("tags", updated);
+    save({ tags: updated });
+    setTagInput("");
+    setShowSuggestions(false);
+  }
+
+  function removeTag(tag: string) {
+    if (!profile) return;
+    const updated = profile.tags.filter((t) => t.tag !== tag);
+    update("tags", updated);
+    save({ tags: updated });
   }
 
   if (loading) return <div className="p-8 text-sm text-gray-400">Загружаем...</div>;
@@ -149,22 +223,20 @@ export default function CandidateProfilePage() {
                 </div>
               ))}
             </div>
-            <div className="flex gap-2">
-              <input
-                value={newSkill}
-                onChange={(e) => setNewSkill(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && newSkill.trim()) {
-                    const updated = [...profile.technicalSkills, { name: newSkill.trim(), level: "" }];
-                    update("technicalSkills", updated);
-                    save({ technicalSkills: updated });
-                    setNewSkill("");
-                  }
-                }}
-                placeholder="Добавить навык (Enter)"
-                className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
+            <input
+              value={newSkill}
+              onChange={(e) => setNewSkill(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && newSkill.trim()) {
+                  const updated = [...profile.technicalSkills, { name: newSkill.trim(), level: "" }];
+                  update("technicalSkills", updated);
+                  save({ technicalSkills: updated });
+                  setNewSkill("");
+                }
+              }}
+              placeholder="Добавить навык (Enter)"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            />
           </div>
 
           {/* Soft skills */}
@@ -263,38 +335,73 @@ export default function CandidateProfilePage() {
           {/* Tags */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <h2 className="text-sm font-semibold text-gray-800 mb-3">Теги для поиска</h2>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {profile.tags.map((tag) => (
-                <span key={tag} className="flex items-center gap-1.5 bg-black text-white text-xs px-3 py-1.5 rounded-full">
-                  #{tag}
-                  <button
-                    onClick={() => {
-                      const updated = profile.tags.filter((t) => t !== tag);
-                      update("tags", updated);
-                      save({ tags: updated });
-                    }}
-                    className="opacity-60 hover:opacity-100 text-xs"
-                  >✕</button>
-                </span>
-              ))}
+
+            {/* Grouped tags */}
+            {CATEGORIES.map(({ value: cat, label }) => {
+              const catTags = profile.tags.filter((t) => t.category === cat);
+              if (catTags.length === 0) return null;
+              return (
+                <div key={cat} className="mb-3">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{label}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {catTags.map((t) => (
+                      <TagBadge key={t.tag} tag={t.tag} category={t.category} onRemove={() => removeTag(t.tag)} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Add tag input */}
+            <div className="flex gap-2 mt-3" ref={suggestRef}>
+              <div className="relative flex-1">
+                <input
+                  value={tagInput}
+                  onChange={(e) => {
+                    setTagInput(e.target.value);
+                    fetchSuggestions(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => { fetchSuggestions(tagInput); setShowSuggestions(true); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && tagInput.trim()) {
+                      addTag(tagInput, tagCategory);
+                    }
+                    if (e.key === "Escape") setShowSuggestions(false);
+                  }}
+                  placeholder="Тег (Enter для добавления нового)"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                    {suggestions.map((s) => (
+                      <button
+                        key={`${s.tag}-${s.category}`}
+                        onMouseDown={(e) => { e.preventDefault(); addTag(s.tag, s.category); }}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-gray-50 text-left"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${CATEGORY_COLORS[s.category] || CATEGORY_COLORS.other}`}>
+                            {CATEGORIES.find((c) => c.value === s.category)?.label}
+                          </span>
+                          #{s.tag}
+                        </span>
+                        <span className="text-xs text-gray-400">({s.count})</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <select
+                value={tagCategory}
+                onChange={(e) => { setTagCategory(e.target.value); fetchSuggestions(tagInput); }}
+                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
             </div>
-            <input
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && tagInput.trim()) {
-                  const newTag = tagInput.trim().toLowerCase();
-                  if (!profile.tags.includes(newTag)) {
-                    const updated = [...profile.tags, newTag];
-                    update("tags", updated);
-                    save({ tags: updated });
-                  }
-                  setTagInput("");
-                }
-              }}
-              placeholder="Добавить тег (Enter) — напр: react, b2b, remote-ready"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            />
           </div>
         </div>
 
@@ -303,10 +410,18 @@ export default function CandidateProfilePage() {
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <h2 className="text-sm font-semibold text-gray-800 mb-3">Из анкеты</h2>
             <div className="space-y-3 text-sm">
-              <div>
-                <p className="text-xs text-gray-400 mb-1">Email</p>
-                <p className="text-gray-800">{app.email}</p>
-              </div>
+              {app.telegram && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Telegram</p>
+                  <p className="text-gray-800">@{app.telegram}</p>
+                </div>
+              )}
+              {app.email && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Email</p>
+                  <p className="text-gray-800">{app.email}</p>
+                </div>
+              )}
               <div>
                 <p className="text-xs text-gray-400 mb-1">Интересующие сферы</p>
                 <p className="text-gray-800">{app.industries.join(", ")}</p>

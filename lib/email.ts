@@ -85,6 +85,7 @@ export async function sendCandidateRejection(
 export async function sendAdminNotification(data: {
   fullName: string;
   email: string;
+  telegram: string;
   position: string;
   grade: string;
   slotDate: Date;
@@ -98,7 +99,8 @@ export async function sendAdminNotification(data: {
       <h2>Новая заявка на собеседование</h2>
       <table style="border-collapse:collapse;width:100%">
         <tr><td style="padding:8px;border:1px solid #ddd"><strong>Имя</strong></td><td style="padding:8px;border:1px solid #ddd">${data.fullName}</td></tr>
-        <tr><td style="padding:8px;border:1px solid #ddd"><strong>Email</strong></td><td style="padding:8px;border:1px solid #ddd">${data.email}</td></tr>
+        ${data.telegram ? `<tr><td style="padding:8px;border:1px solid #ddd"><strong>Telegram</strong></td><td style="padding:8px;border:1px solid #ddd">@${data.telegram}</td></tr>` : ""}
+        ${data.email ? `<tr><td style="padding:8px;border:1px solid #ddd"><strong>Email</strong></td><td style="padding:8px;border:1px solid #ddd">${data.email}</td></tr>` : ""}
         <tr><td style="padding:8px;border:1px solid #ddd"><strong>Позиция</strong></td><td style="padding:8px;border:1px solid #ddd">${data.position}</td></tr>
         <tr><td style="padding:8px;border:1px solid #ddd"><strong>Грейд</strong></td><td style="padding:8px;border:1px solid #ddd">${data.grade}</td></tr>
         <tr><td style="padding:8px;border:1px solid #ddd"><strong>Слот</strong></td><td style="padding:8px;border:1px solid #ddd">${formatDateTime(data.slotDate)}</td></tr>

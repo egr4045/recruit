@@ -35,8 +35,9 @@ model Application {
   slotId            Int               @unique
   slot              TimeSlot          @relation(fields: [slotId], references: [id])
   fullName          String
-  email             String
-  phone             String
+  email             String?
+  phone             String?
+  telegram          String?
   position          String
   grade             String
   resumeUrl         String?
@@ -55,9 +56,10 @@ model Application {
   updatedAt         DateTime          @updatedAt
 
   candidateProfile CandidateProfile?
+  telegramChat     TelegramChat?
+  messages         ChatMessage[]
 
   @@index([status])
-  @@index([email])
   @@index([createdAt])
   @@schema("recruit")
 }
@@ -91,10 +93,35 @@ model CandidateProfile {
 model CandidateTag {
   id        Int              @id @default(autoincrement())
   tag       String
+  category  String           @default("other")
   profileId Int
   profile   CandidateProfile @relation(fields: [profileId], references: [id])
 
   @@index([tag])
   @@unique([profileId, tag])
+  @@schema("recruit")
+}
+
+model TelegramChat {
+  id               Int         @id @default(autoincrement())
+  applicationId    Int         @unique
+  application      Application @relation(fields: [applicationId], references: [id])
+  telegramChatId   String?
+  telegramUsername String
+  linkedAt         DateTime?
+  createdAt        DateTime    @default(now())
+
+  @@schema("recruit")
+}
+
+model ChatMessage {
+  id            Int         @id @default(autoincrement())
+  applicationId Int
+  application   Application @relation(fields: [applicationId], references: [id])
+  text          String
+  fromAdmin     Boolean     @default(false)
+  sentAt        DateTime    @default(now())
+
+  @@index([applicationId])
   @@schema("recruit")
 }

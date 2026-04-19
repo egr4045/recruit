@@ -16,6 +16,7 @@ export async function GET(
     include: {
       slot: true,
       candidateProfile: { include: { tags: true } },
+      telegramChat: true,
     },
   });
 
@@ -71,16 +72,18 @@ export async function PATCH(
     });
   }
 
-  // Send emails on status change
-  if (status === "CONFIRMED" && paymentLink) {
-    sendCandidateConfirmation(
-      app.email,
-      app.fullName,
-      app.slot.startsAt,
-      paymentLink
-    ).catch(console.error);
-  } else if (status === "REJECTED") {
-    sendCandidateRejection(app.email, app.fullName).catch(console.error);
+  // Send emails on status change (only if candidate provided an email)
+  if (app.email) {
+    if (status === "CONFIRMED" && paymentLink) {
+      sendCandidateConfirmation(
+        app.email,
+        app.fullName,
+        app.slot.startsAt,
+        paymentLink
+      ).catch(console.error);
+    } else if (status === "REJECTED") {
+      sendCandidateRejection(app.email, app.fullName).catch(console.error);
+    }
   }
 
   return NextResponse.json({ id: updated.id, status: updated.status });

@@ -29,12 +29,13 @@ export async function POST(req: NextRequest) {
         data: { isAvailable: false },
       });
 
-      return tx.application.create({
+      const application = await tx.application.create({
         data: {
           slotId: data.slotId,
           fullName: data.fullName,
-          email: data.email,
-          phone: data.phone,
+          email: data.email || null,
+          phone: data.phone || null,
+          telegram: data.telegram ? data.telegram.replace(/^@/, "") : null,
           position: data.position,
           grade: data.grade,
           resumeUrl: data.resumeUrl || null,
@@ -50,18 +51,33 @@ export async function POST(req: NextRequest) {
         },
         include: { slot: true },
       });
+
+      // Create TelegramChat record for the candidate
+      if (data.telegram) {
+        await tx.telegramChat.create({
+          data: {
+            applicationId: application.id,
+            telegramUsername: data.telegram.replace(/^@/, ""),
+          },
+        });
+      }
+
+      return application;
     });
 
     // Fire-and-forget notifications
-    sendCandidateAcknowledgement(
-      application.email,
-      application.fullName,
-      application.slot.startsAt
-    ).catch(console.error);
+    if (application.email) {
+      sendCandidateAcknowledgement(
+        application.email,
+        application.fullName,
+        application.slot.startsAt
+      ).catch(console.error);
+    }
 
     sendAdminNotification({
       fullName: application.fullName,
-      email: application.email,
+      email: application.email || "",
+      telegram: application.telegram || "",
       position: application.position,
       grade: application.grade,
       slotDate: application.slot.startsAt,
@@ -69,7 +85,8 @@ export async function POST(req: NextRequest) {
 
     notifyAdmin({
       fullName: application.fullName,
-      email: application.email,
+      email: application.email || "",
+      telegram: application.telegram || "",
       position: application.position,
       grade: application.grade,
       slotDate: application.slot.startsAt,

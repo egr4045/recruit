@@ -20,11 +20,25 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { startsAt, durationMin = 60 } = await req.json();
+  const body = await req.json();
+
+  // Bulk creation: { slots: string[], durationMin? }
+  if (Array.isArray(body.slots)) {
+    const durationMin = body.durationMin ?? 60;
+    const data = (body.slots as string[]).map((startsAt) => ({
+      startsAt: new Date(startsAt),
+      durationMin,
+      isAvailable: true,
+    }));
+    const { count } = await prisma.timeSlot.createMany({ data });
+    return NextResponse.json({ created: count }, { status: 201 });
+  }
+
+  // Single creation
+  const { startsAt, durationMin = 60 } = body;
   if (!startsAt) {
     return NextResponse.json({ error: "startsAt required" }, { status: 400 });
   }
-
   const slot = await prisma.timeSlot.create({
     data: { startsAt: new Date(startsAt), durationMin, isAvailable: true },
   });

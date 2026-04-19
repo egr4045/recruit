@@ -3,8 +3,9 @@ import { z } from "zod";
 export const bookingSchema = z.object({
   slotId: z.number().int().positive(),
   fullName: z.string().min(2, "Введите полное имя"),
-  email: z.string().email("Введите корректный email"),
-  phone: z.string().min(7, "Введите номер телефона"),
+  telegram: z.string().min(5, "Введите Telegram username (минимум 5 символов)"),
+  email: z.string().optional(),
+  phone: z.string().regex(/^\d*$/, "Только цифры").optional(),
   position: z.string().min(2, "Введите позицию"),
   grade: z.enum(["Junior", "Middle", "Senior", "Lead", "Principal"], {
     error: "Выберите грейд",

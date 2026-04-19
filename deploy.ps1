@@ -1,4 +1,4 @@
-param (
+﻿param (
     [string]$ServerIp = "2.59.40.15",
     [string]$User = "egr",
     [string]$DeployPath = "/var/www/recruit"
@@ -35,7 +35,7 @@ Write-Host "⚙️  4. Развертывание на сервере..." -Foreg
 Write-Host "==========================================" -ForegroundColor Cyan
 $RemoteScript = @"
     echo '📥 Загружаем Docker образ...'
-    docker load < /tmp/recruit-app.tar.gz
+    docker load -i /tmp/recruit-app.tar.gz
     
     echo '📂 Переходим в директорию проекта и подтягиваем изменения кода...'
     cd $DeployPath || exit 1
@@ -49,7 +49,7 @@ $RemoteScript = @"
     rm /tmp/recruit-app.tar.gz
     docker image prune -f
     
-    echo '`n'
+    echo '\n'
     echo '=========================================='
     echo '📊 HEALTH CHECK СЕРВЕРА'
     echo '=========================================='
@@ -65,3 +65,4 @@ ssh "${User}@${ServerIp}" $RemoteScript
 
 Write-Host "`n✅ Деплой успешно завершен!" -ForegroundColor Green
 Remove-Item "recruit-app.tar.gz" -Force
+

@@ -83,8 +83,12 @@ export default function ApplicationDetailPage() {
     }
   }
 
+  const prevMessagesCountRef = useRef(0);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > prevMessagesCountRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevMessagesCountRef.current = messages.length;
   }, [messages]);
 
   // Poll messages every 15 seconds

@@ -11,11 +11,8 @@ services:
     environment:
       NODE_ENV: production
     volumes:
-      - uploads_data:/app/public/uploads
+      - /var/www/recruit/uploads:/app/public/uploads
     extra_hosts:
       # чтобы контейнер мог достучаться до PostgreSQL на хосте
       - "host.docker.internal:host-gateway"
     network_mode: bridge
-
-volumes:
-  uploads_data:

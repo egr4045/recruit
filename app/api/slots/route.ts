@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
+
+export const runtime = "nodejs";
+
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

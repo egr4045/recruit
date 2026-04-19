@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+
+export const runtime = "nodejs";
+
 
 export async function POST(req: NextRequest) {
   // Verify secret token from Telegram
@@ -18,7 +21,7 @@ export async function POST(req: NextRequest) {
   const chatId = String(message.chat.id);
   const text: string = message.text || "";
 
-  // Handle /start {applicationId} — link candidate's chat to their application
+  // Handle /start {applicationId} вЂ” link candidate's chat to their application
   const startMatch = text.match(/^\/start(?:\s+(\d+))?/);
   if (startMatch) {
     const appId = startMatch[1] ? Number(startMatch[1]) : null;
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: "Привет! Теперь вы будете получать сообщения от рекрутера здесь. Можете писать нам — мы ответим.",
+            text: "РџСЂРёРІРµС‚! РўРµРїРµСЂСЊ РІС‹ Р±СѓРґРµС‚Рµ РїРѕР»СѓС‡Р°С‚СЊ СЃРѕРѕР±С‰РµРЅРёСЏ РѕС‚ СЂРµРєСЂСѓС‚РµСЂР° Р·РґРµСЃСЊ. РњРѕР¶РµС‚Рµ РїРёСЃР°С‚СЊ РЅР°Рј вЂ” РјС‹ РѕС‚РІРµС‚РёРј.",
           }),
         }).catch(console.error);
       }
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // Incoming message from candidate — store and notify admin
+  // Incoming message from candidate вЂ” store and notify admin
   const chat = await prisma.telegramChat.findFirst({
     where: { telegramChatId: chatId },
     include: { application: true },
@@ -70,10 +73,10 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: adminChatId,
-        text: `💬 <b>${candidateName}</b>:\n${text}`,
+        text: `рџ’¬ <b>${candidateName}</b>:\n${text}`,
         parse_mode: "HTML",
         reply_markup: {
-          inline_keyboard: [[{ text: "Открыть чат", url: adminUrl }]],
+          inline_keyboard: [[{ text: "РћС‚РєСЂС‹С‚СЊ С‡Р°С‚", url: adminUrl }]],
         },
       }),
     }).catch(console.error);

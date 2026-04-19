@@ -1,8 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { bookingSchema } from "@/lib/validations/booking";
 import { sendCandidateAcknowledgement, sendAdminNotification } from "@/lib/email";
 import { notifyAdmin } from "@/lib/telegram";
+
+export const runtime = "nodejs";
+
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -10,7 +13,7 @@ export async function POST(req: NextRequest) {
 
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Ошибка валидации", details: parsed.error.flatten() },
+      { error: "РћС€РёР±РєР° РІР°Р»РёРґР°С†РёРё", details: parsed.error.flatten() },
       { status: 400 }
     );
   }
@@ -97,11 +100,11 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     if (err instanceof Error && err.message === "SLOT_TAKEN") {
       return NextResponse.json(
-        { error: "Этот слот уже занят. Пожалуйста, выберите другое время." },
+        { error: "Р­С‚РѕС‚ СЃР»РѕС‚ СѓР¶Рµ Р·Р°РЅСЏС‚. РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІС‹Р±РµСЂРёС‚Рµ РґСЂСѓРіРѕРµ РІСЂРµРјСЏ." },
         { status: 409 }
       );
     }
     console.error(err);
-    return NextResponse.json({ error: "Внутренняя ошибка сервера" }, { status: 500 });
+    return NextResponse.json({ error: "Р’РЅСѓС‚СЂРµРЅРЅСЏСЏ РѕС€РёР±РєР° СЃРµСЂРІРµСЂР°" }, { status: 500 });
   }
 }

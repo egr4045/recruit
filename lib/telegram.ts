@@ -79,6 +79,85 @@ export async function sendMessageToCandidate(
   return !!(res && res.ok);
 }
 
+export async function sendMessageToEmployer(
+  telegramChatId: string,
+  text: string
+): Promise<boolean> {
+  const res = await telegramPost("sendMessage", {
+    chat_id: telegramChatId,
+    text,
+  });
+  return !!(res && res.ok);
+}
+
+export async function notifyAdminEmployerInquiry(data: {
+  inquiryId: number;
+  username: string;
+  profileId: number | null;
+}) {
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!chatId) return;
+
+  const profileText = data.profileId
+    ? ` (интересовался кандидатом #${data.profileId})`
+    : "";
+  const adminUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/admin/employer-inquiries/${data.inquiryId}`;
+
+  await telegramPost("sendMessage", {
+    chat_id: chatId,
+    text:
+      `💼 <b>Новый запрос от работодателя</b>\n\n` +
+      `👤 @${escapeHtml(data.username)}${escapeHtml(profileText)}`,
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [[{ text: "Открыть в админке", url: adminUrl }]],
+    },
+  });
+}
+
+export async function notifyAdminEmployerMessage(data: {
+  inquiryId: number;
+  username: string;
+  text: string;
+}) {
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!chatId) return;
+
+  const adminUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/admin/employer-inquiries/${data.inquiryId}`;
+
+  await telegramPost("sendMessage", {
+    chat_id: chatId,
+    text: `💬 <b>@${escapeHtml(data.username)}</b>:\n${escapeHtml(data.text)}`,
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [[{ text: "Открыть чат", url: adminUrl }]],
+    },
+  });
+}
+
+export async function notifyAdminEmployerInterest(data: {
+  inquiryId: number | undefined;
+  username: string;
+  profileId: number;
+}) {
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!chatId) return;
+
+  const adminUrl = data.inquiryId
+    ? `${process.env.NEXT_PUBLIC_BASE_URL}/admin/employer-inquiries/${data.inquiryId}`
+    : `${process.env.NEXT_PUBLIC_BASE_URL}/admin/employer-inquiries`;
+
+  await telegramPost("sendMessage", {
+    chat_id: chatId,
+    text:
+      `⭐ <b>@${escapeHtml(data.username)}</b> хочет познакомиться с кандидатом #${data.profileId}`,
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [[{ text: "Открыть в админке", url: adminUrl }]],
+    },
+  });
+}
+
 export async function setBotWebhook(webhookUrl: string) {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
   return telegramPost("setWebhook", {

@@ -87,6 +87,8 @@ model CandidateProfile {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
+  employerInquiries EmployerInquiry[]
+
   @@schema("recruit")
 }
 
@@ -123,5 +125,63 @@ model ChatMessage {
   sentAt        DateTime    @default(now())
 
   @@index([applicationId])
+  @@schema("recruit")
+}
+
+// ─── Employer / Talent Sales ─────────────────────────────────────────────────
+
+model EmployerInquiry {
+  id                    Int                   @id @default(autoincrement())
+  telegramChatId        String?
+  telegramUsername      String
+  interestedInProfileId Int?
+  interestedIn          CandidateProfile?     @relation(fields: [interestedInProfileId], references: [id])
+  status                EmployerInquiryStatus @default(NEW)
+  messages              EmployerMessage[]
+  access                EmployerAccess?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@index([telegramChatId])
+  @@schema("recruit")
+}
+
+enum EmployerInquiryStatus {
+  NEW
+  IN_PROGRESS
+  GRANTED
+  CLOSED
+
+  @@schema("recruit")
+}
+
+model EmployerMessage {
+  id        Int             @id @default(autoincrement())
+  inquiryId Int
+  inquiry   EmployerInquiry @relation(fields: [inquiryId], references: [id])
+  text      String
+  fromAdmin Boolean         @default(false)
+  sentAt    DateTime        @default(now())
+
+  @@index([inquiryId])
+  @@schema("recruit")
+}
+
+model EmployerAccess {
+  id         Int             @id @default(autoincrement())
+  inquiryId  Int             @unique
+  inquiry    EmployerInquiry @relation(fields: [inquiryId], references: [id])
+  scope      AccessScope
+  profileIds String          @default("[]")
+  token      String          @unique @default(cuid())
+  createdAt  DateTime        @default(now())
+
+  @@schema("recruit")
+}
+
+enum AccessScope {
+  ALL
+  SELECTED
+
   @@schema("recruit")
 }

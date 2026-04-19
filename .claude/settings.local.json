@@ -33,7 +33,8 @@
       "Bash(findstr \":3000 :3001 :3002 :3003 :3004\")",
       "Bash(findstr LISTENING)",
       "Bash(curl -s -o /dev/null -w \"sobies=%{http_code} admin=%{http_code}\\\\n\" http://localhost:3005/sobies)",
-      "Bash(curl -s -o /dev/null -w \"admin=%{http_code}\\\\n\" http://localhost:3005/admin)"
+      "Bash(curl -s -o /dev/null -w \"admin=%{http_code}\\\\n\" http://localhost:3005/admin)",
+      "Bash(powershell -Command \"Get-PSDrive C | Format-List Name,Used,Free\")"
     ]
   }
 }

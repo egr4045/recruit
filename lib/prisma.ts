@@ -20,6 +20,18 @@ function createPrismaClient() {
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-export const prisma = globalForPrisma.prisma || createPrismaClient();
+// Ленивая инициализация через Proxy: createPrismaClient() (и new URL())
+// вызывается только при первом реальном обращении к prisma.xxx,
+// а не при импорте модуля — это предотвращает падение во время сборки,
+// когда DATABASE_URL ещё не задан.
+let _client: PrismaClient | undefined;
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_, prop) {
+    if (!_client) {
+      _client = globalForPrisma.prisma ?? createPrismaClient();
+      if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = _client;
+    }
+    return Reflect.get(_client, prop);
+  },
+});

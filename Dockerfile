@@ -14,6 +14,9 @@ COPY . .
 RUN npx prisma generate
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# Placeholder для build-time: DATABASE_URL нужен чтобы new URL() не падал при сборке.
+# Реальный URL подтягивается из .env в runtime.
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 RUN npm run build
 
 # ---- runner ----

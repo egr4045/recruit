@@ -31,7 +31,7 @@ fi
 DATABASE_URL="$DB_URL" node_modules/.bin/prisma db push
 
 echo "📝 Создаем тестовую статью..."
-sudo docker exec -i -e DATABASE_URL="$DB_URL" recruit-app node - < seed-article.js
+DATABASE_URL="$DB_URL" node seed-article.js || echo "⚠️  Seed пропущен"
 
 echo "🧹 Очищаем временные файлы и старые образы..."
 sudo rm -f /tmp/recruit-app.tar.gz

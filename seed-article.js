@@ -1,5 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { PrismaPg } = require('@prisma/adapter-pg');
+const pg = require('pg');
+
+const url = new URL(process.env.DATABASE_URL);
+url.searchParams.delete('schema');
+const pool = new pg.Pool({ connectionString: url.toString() });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const existing = await prisma.seoArticle.findUnique({
@@ -20,15 +27,15 @@ async function main() {
       isPublished: true,
       content: `
         <h2>1. Telegram-каналы</h2>
-        <p>Telegram стал одним из самых популярных мест для поиска работы. Вот парочка топовых каналов:</p>
+        <p>Telegram стал одним из самых популярных мест для поиска работы.</p>
         <ul>
-          <li><strong>IT Jobs</strong> - Крупнейший канал с вакансиями.</li>
-          <li><strong>DevOps Jobs</strong> - Специализированный канал для DevOps инженеров.</li>
+          <li><strong>IT Jobs</strong> — крупнейший канал с вакансиями.</li>
+          <li><strong>DevOps Jobs</strong> — специализированный канал для DevOps инженеров.</li>
         </ul>
         <h2>2. Хабр Карьера и LinkedIn</h2>
-        <p>Хабр Карьера отлично подходит для поиска работы в РФ и СНГ, предоставляя возможность посмотреть рейтинг компаний от сотрудников. LinkedIn — обязателен для поиска удаленки за рубежом.</p>
+        <p>Хабр Карьера отлично подходит для поиска работы в РФ и СНГ. LinkedIn — обязателен для удалёнки за рубежом.</p>
         <h2>3. Нетворкинг</h2>
-        <p>Собирайтесь на митапах, конференциях (HighLoad, FrontendConf). Общение и рекомендации (рефералки) от коллег работают эффективнее всего!</p>
+        <p>Митапы, конференции (HighLoad, FrontendConf). Рекомендации от коллег работают эффективнее всего!</p>
       `
     }
   });
@@ -37,10 +44,5 @@ async function main() {
 }
 
 main()
-  .catch(e => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch(e => { console.error(e); process.exit(1); })
+  .finally(async () => { await prisma.$disconnect(); await pool.end(); });

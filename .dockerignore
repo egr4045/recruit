@@ -11,3 +11,8 @@ docker-compose.yml
 *.log
 .env
 .claudedev
+deploy-remote.sh
+seed-article.js
+*.tar.gz
+*.tar
+*.ps1

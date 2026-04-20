@@ -36,6 +36,10 @@ Write-Host "4. Deploying on server..." -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 ssh "${User}@${ServerIp}" "chmod +x /tmp/deploy-remote.sh && /tmp/deploy-remote.sh"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Remote deploy script failed." -ForegroundColor Red
+    exit 1
+}
 
 Write-Host "`n✅ Deploy successful!" -ForegroundColor Green
 Remove-Item "recruit-app.tar.gz" -Force

@@ -185,3 +185,18 @@ enum AccessScope {
 
   @@schema("recruit")
 }
+
+model SeoArticle {
+  id              Int      @id @default(autoincrement())
+  slug            String   @unique
+  title           String
+  metaDescription String?
+  content         String
+  isPublished     Boolean  @default(false)
+  type            String   @default("ARTICLE")
+  views           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@schema("recruit")
+}

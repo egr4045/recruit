@@ -7,6 +7,7 @@ const navItems = [
   { href: "/admin/applications", label: "Заявки", icon: "📋" },
   { href: "/admin/slots", label: "Слоты", icon: "📅" },
   { href: "/admin/candidates", label: "Кандидаты", icon: "👤" },
+  { href: "/admin/content", label: "Контент (SEO)", icon: "📝" },
 ];
 
 export function AdminSidebar() {

@@ -1,4 +1,4 @@
-param (
+﻿param (
     [string]$ServerIp = "2.59.40.15",
     [string]$User = "egr",
     [string]$DeployPath = "/var/www/recruit"
@@ -65,4 +65,5 @@ ssh "${User}@${ServerIp}" $RemoteScript
 
 Write-Host "`n✅ Деплой успешно завершен!" -ForegroundColor Green
 Remove-Item "recruit-app.tar.gz" -Force
+
 

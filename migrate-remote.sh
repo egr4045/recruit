@@ -12,6 +12,9 @@ if [ -z "$DB_URL" ]; then
   exit 1
 fi
 
+# host.docker.internal резолвится только внутри контейнера — снаружи используем localhost
+DB_URL=$(echo "$DB_URL" | sed 's/host\.docker\.internal/localhost/g')
+
 echo "📂 Pulling latest schema from git..."
 sudo git pull
 

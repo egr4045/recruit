@@ -18,6 +18,7 @@ sudo docker compose up -d
 
 echo "🗄️ Обновляем схему базы данных..."
 sleep 3
+sudo docker exec recruit-app rm -f prisma.config.ts
 DB_URL=$(grep '^DATABASE_URL=' .env | cut -d '=' -f2-)
 # Убираем возможные кавычки
 DB_URL=$(echo $DB_URL | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")

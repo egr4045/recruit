@@ -18,10 +18,14 @@ sudo docker compose up -d
 
 echo "🗄️ Обновляем схему базы данных..."
 sleep 3
-sudo docker exec recruit-app npx prisma db push
+DB_URL=$(grep '^DATABASE_URL=' .env | cut -d '=' -f2-)
+# Убираем возможные кавычки
+DB_URL=$(echo $DB_URL | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
+
+sudo docker exec -e DATABASE_URL="$DB_URL" recruit-app npx prisma db push
 
 echo "📝 Создаем тестовую статью..."
-sudo docker exec recruit-app node seed-article.js
+sudo docker exec -e DATABASE_URL="$DB_URL" recruit-app node seed-article.js
 
 echo "🧹 Очищаем временные файлы и старые образы..."
 sudo rm -f /tmp/recruit-app.tar.gz

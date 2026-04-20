@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { bookingSchema } from "@/lib/validations/booking";
 import { sendCandidateAcknowledgement, sendAdminNotification } from "@/lib/email";
@@ -86,15 +86,17 @@ export async function POST(req: NextRequest) {
       slotDate: application.slot.startsAt,
     }).catch(console.error);
 
-    notifyAdmin({
-      fullName: application.fullName,
-      email: application.email || "",
-      telegram: application.telegram || "",
-      position: application.position,
-      grade: application.grade,
-      slotDate: application.slot.startsAt,
-      applicationId: application.id,
-    }).catch(console.error);
+    if (process.env.IS_NOTIFY !== "false") {
+      notifyAdmin({
+        fullName: application.fullName,
+        email: application.email || "",
+        telegram: application.telegram || "",
+        position: application.position,
+        grade: application.grade,
+        slotDate: application.slot.startsAt,
+        applicationId: application.id,
+      }).catch(console.error);
+    }
 
     return NextResponse.json({ id: application.id, status: application.status }, { status: 201 });
   } catch (err) {

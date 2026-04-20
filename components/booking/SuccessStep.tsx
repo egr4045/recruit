@@ -7,7 +7,7 @@ interface Props {
 }
 
 export function SuccessStep({ applicationId }: Props) {
-  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
+  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "CareerFixer_bot";
   const botLink = botUsername && applicationId
     ? `https://t.me/${botUsername}?start=${applicationId}`
     : null;

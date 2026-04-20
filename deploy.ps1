@@ -1,4 +1,4 @@
-﻿param (
+param (
     [string]$ServerIp = "2.59.40.15",
     [string]$User = "egr",
     [string]$DeployPath = "/var/www/recruit"
@@ -35,19 +35,19 @@ Write-Host "⚙️  4. Развертывание на сервере..." -Foreg
 Write-Host "==========================================" -ForegroundColor Cyan
 $RemoteScript = @"
     echo '📥 Загружаем Docker образ...'
-    docker load -i /tmp/recruit-app.tar.gz
+    sudo docker load -i /tmp/recruit-app.tar.gz
     
     echo '📂 Переходим в директорию проекта и подтягиваем изменения кода...'
     cd $DeployPath || exit 1
-    git pull
+    sudo git pull
     
     echo '🔄 Перезапускаем контейнеры...'
-    docker compose down
-    docker compose up -d
+    sudo docker compose down
+    sudo docker compose up -d
     
     echo '🧹 Очищаем временные файлы и старые образы...'
-    rm /tmp/recruit-app.tar.gz
-    docker image prune -f
+    sudo rm /tmp/recruit-app.tar.gz
+    sudo docker image prune -f
     
     echo '\n'
     echo '=========================================='
@@ -57,7 +57,7 @@ $RemoteScript = @"
     df -h /
     echo '------------------------------------------'
     echo '🏃 Активные контейнеры:'
-    docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep recruit
+    sudo docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep recruit
     echo '=========================================='
 "@
 

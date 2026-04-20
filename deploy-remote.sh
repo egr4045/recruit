@@ -25,7 +25,7 @@ DB_URL=$(echo $DB_URL | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
 sudo docker exec -e DATABASE_URL="$DB_URL" recruit-app npx prisma db push
 
 echo "📝 Создаем тестовую статью..."
-sudo docker exec -e DATABASE_URL="$DB_URL" recruit-app node seed-article.js
+sudo docker exec -i -e DATABASE_URL="$DB_URL" recruit-app node - < seed-article.js
 
 echo "🧹 Очищаем временные файлы и старые образы..."
 sudo rm -f /tmp/recruit-app.tar.gz

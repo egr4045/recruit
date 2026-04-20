@@ -49,3 +49,7 @@ next-env.d.ts
 # Env
 .env
 .env.local
+
+# Docker archives
+*.tar.gz
+*.tar

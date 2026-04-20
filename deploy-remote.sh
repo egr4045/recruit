@@ -17,13 +17,16 @@ sudo docker compose down
 sudo docker compose up -d
 
 echo "🗄️ Обновляем схему базы данных..."
-sleep 3
-sudo docker exec recruit-app rm -f prisma.config.ts
 DB_URL=$(grep '^DATABASE_URL=' .env | cut -d '=' -f2-)
 # Убираем возможные кавычки
 DB_URL=$(echo $DB_URL | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
 
-sudo docker exec -e DATABASE_URL="$DB_URL" recruit-app npx prisma db push
+# Запускаем из директории проекта — там есть node_modules и prisma.config.ts
+if [ ! -f node_modules/.bin/prisma ]; then
+  echo "node_modules не найден, устанавливаем зависимости..."
+  npm install --prefer-offline 2>/dev/null || npm install
+fi
+DATABASE_URL="$DB_URL" node_modules/.bin/prisma db push
 
 echo "📝 Создаем тестовую статью..."
 sudo docker exec -i -e DATABASE_URL="$DB_URL" recruit-app node - < seed-article.js

@@ -34,8 +34,10 @@ Write-Host "`n==========================================" -ForegroundColor Cyan
 Write-Host "⚙️  4. Развертывание на сервере..." -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 $RemoteScript = @"
-    echo '📥 Загружаем Docker образ...'
-    sudo docker load -i /tmp/recruit-app.tar.gz
+    echo '📥 Распаковываем и загружаем Docker образ...'
+    tar -xzf /tmp/recruit-app.tar.gz -C /tmp/
+    sudo docker load -i /tmp/recruit-app.tar
+    sudo rm /tmp/recruit-app.tar
     
     echo '📂 Переходим в директорию проекта и подтягиваем изменения кода...'
     cd $DeployPath || exit 1
@@ -65,5 +67,6 @@ ssh "${User}@${ServerIp}" $RemoteScript
 
 Write-Host "`n✅ Деплой успешно завершен!" -ForegroundColor Green
 Remove-Item "recruit-app.tar.gz" -Force
+
 
 

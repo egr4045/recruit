@@ -123,6 +123,7 @@ model ChatMessage {
   text          String
   fromAdmin     Boolean     @default(false)
   sentAt        DateTime    @default(now())
+  isRead        Boolean     @default(false)
 
   @@index([applicationId])
   @@schema("recruit")

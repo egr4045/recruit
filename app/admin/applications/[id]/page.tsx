@@ -80,6 +80,7 @@ export default function ApplicationDetailPage() {
     if (res.ok) {
       const data = await res.json();
       setMessages(data);
+      fetch(`/api/admin/applications/${id}/messages/read`, { method: "POST" }).catch(() => {});
     }
   }
 

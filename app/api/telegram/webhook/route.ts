@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: chatId,
-            text: "РџСЂРёРІРµС‚! РўРµРїРµСЂСЊ РІС‹ Р±СѓРґРµС‚Рµ РїРѕР»СѓС‡Р°С‚СЊ СЃРѕРѕР±С‰РµРЅРёСЏ РѕС‚ СЂРµРєСЂСѓС‚РµСЂР° Р·РґРµСЃСЊ. РњРѕР¶РµС‚Рµ РїРёСЃР°С‚СЊ РЅР°Рј вЂ” РјС‹ РѕС‚РІРµС‚РёРј.",
+            text: "Привет! Теперь вы будете получать сообщения от рекрутера здесь. Можете писать нам — мы ответим.",
           }),
         }).catch(console.error);
       }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
   if (!chat) return NextResponse.json({ ok: true });
 
-  await prisma.chatMessage.create({
+  const msg = await prisma.chatMessage.create({
     data: {
       applicationId: chat.applicationId,
       text,
@@ -62,25 +62,34 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Notify admin in their Telegram chat
-  const adminChatId = process.env.TELEGRAM_CHAT_ID;
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (adminChatId && token) {
-    const candidateName = chat.application.fullName;
-    const adminUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/admin/applications/${chat.applicationId}`;
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: adminChatId,
-        text: `рџ’¬ <b>${candidateName}</b>:\n${text}`,
-        parse_mode: "HTML",
-        reply_markup: {
-          inline_keyboard: [[{ text: "РћС‚РєСЂС‹С‚СЊ С‡Р°С‚", url: adminUrl }]],
-        },
-      }),
-    }).catch(console.error);
-  }
+  // Delay notification for 5 minutes
+  setTimeout(async () => {
+    try {
+      const currentMsg = await prisma.chatMessage.findUnique({ where: { id: msg.id } });
+      if (currentMsg && !currentMsg.isRead) {
+        const adminChatId = process.env.TELEGRAM_CHAT_ID;
+        const token = process.env.TELEGRAM_BOT_TOKEN;
+        if (adminChatId && token) {
+          const candidateName = chat.application.fullName;
+          const adminUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/admin/applications/${chat.applicationId}`;
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: adminChatId,
+              text: `💬 <b>${candidateName}</b>:\n${text}`,
+              parse_mode: "HTML",
+              reply_markup: {
+                inline_keyboard: [[{ text: "Открыть чат", url: adminUrl }]],
+              },
+            }),
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[Delayed Notification Error]", err);
+    }
+  }, 5 * 60 * 1000);
 
   return NextResponse.json({ ok: true });
 }

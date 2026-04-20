@@ -12,6 +12,9 @@ if [ -z "$DB_URL" ]; then
   exit 1
 fi
 
+echo "📂 Pulling latest schema from git..."
+sudo git pull
+
 if [ ! -f node_modules/.bin/prisma ]; then
   echo "📦 prisma not found in node_modules, installing deps..."
   npm install --prefer-offline 2>/dev/null || npm install

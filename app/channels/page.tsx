@@ -6,7 +6,7 @@ export const metadata = {
   description: "Подборки лучших Telegram каналов и полезные статьи для поиска работы.",
 };
 
-export const revalidate = 60; // ISR cache for 60 seconds
+export const dynamic = "force-dynamic";
 
 export default async function ChannelsPage() {
   const allArticles = await prisma.seoArticle.findMany({

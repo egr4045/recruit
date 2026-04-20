@@ -1,4 +1,4 @@
-﻿param (
+param (
     [string]$ServerIp = "2.59.40.15",
     [string]$User = "egr",
     [string]$DeployPath = "/var/www/recruit"
@@ -26,47 +26,16 @@ tar -czf recruit-app.tar.gz recruit-app.tar
 Remove-Item recruit-app.tar
 
 Write-Host "`n==========================================" -ForegroundColor Cyan
-Write-Host "🚀 3. Отправка архива на сервер ($ServerIp)..." -ForegroundColor Cyan
+Write-Host "🚀 3. Отправка архива и скрипта на сервер ($ServerIp)..." -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 scp recruit-app.tar.gz "${User}@${ServerIp}:/tmp/"
+scp deploy-remote.sh "${User}@${ServerIp}:/tmp/"
 
 Write-Host "`n==========================================" -ForegroundColor Cyan
 Write-Host "⚙️  4. Развертывание на сервере..." -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
-$RemoteScript = @"
-    echo '📥 Распаковываем и загружаем Docker образ...'
-    tar -xzf /tmp/recruit-app.tar.gz -C /tmp/
-    sudo docker load -i /tmp/recruit-app.tar
-    sudo rm /tmp/recruit-app.tar
-    
-    echo '📂 Переходим в директорию проекта и подтягиваем изменения кода...'
-    cd $DeployPath || exit 1
-    sudo git pull
-    
-    echo '🔄 Перезапускаем контейнеры...'
-    sudo docker compose down
-    sudo docker compose up -d
-    
-    echo '🧹 Очищаем временные файлы и старые образы...'
-    sudo rm /tmp/recruit-app.tar.gz
-    sudo docker image prune -f
-    
-    echo '\n'
-    echo '=========================================='
-    echo '📊 HEALTH CHECK СЕРВЕРА'
-    echo '=========================================='
-    echo '💽 Место на диске:'
-    df -h /
-    echo '------------------------------------------'
-    echo '🏃 Активные контейнеры:'
-    sudo docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep recruit
-    echo '=========================================='
-"@
 
-ssh "${User}@${ServerIp}" $RemoteScript
+ssh "${User}@${ServerIp}" "chmod +x /tmp/deploy-remote.sh && /tmp/deploy-remote.sh"
 
 Write-Host "`n✅ Деплой успешно завершен!" -ForegroundColor Green
 Remove-Item "recruit-app.tar.gz" -Force
-
-
-

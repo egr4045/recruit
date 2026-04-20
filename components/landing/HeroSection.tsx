@@ -32,7 +32,7 @@ const BUTTONS: LandingButton[] = [
   {
     label: "Найти талант",
     sublabel: "Подобрать сотрудника в команду",
-    href: "#",
+    href: "/talent",
   },
   {
     label: "В команду",

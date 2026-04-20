@@ -10,20 +10,22 @@ export async function GET(req: NextRequest) {
   const tags = searchParams.getAll("tag").filter(Boolean);
   const grades = searchParams.getAll("grade").filter(Boolean);
   const formats = searchParams.getAll("format").filter(Boolean);
+  const industries = searchParams.getAll("industry").filter(Boolean);
   const salaryMin = searchParams.get("salaryMin");
   const salaryMax = searchParams.get("salaryMax");
+  const q = searchParams.get("q")?.toLowerCase().trim() || "";
 
   const profiles = await prisma.candidateProfile.findMany({
     where: {
       overallRating: { gte: 3 },
-      application: { status: "COMPLETED" },
+      application: {
+        status: "COMPLETED",
+        ...(grades.length > 0 && { grade: { in: grades } }),
+      },
       ...(tags.length > 0 && {
         AND: tags.map((tag) => ({
           tags: { some: { tag: { contains: tag.toLowerCase() } } },
         })),
-      }),
-      ...(grades.length > 0 && {
-        application: { grade: { in: grades } },
       }),
     },
     include: {
@@ -56,6 +58,20 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Фильтр по индустрии (тег с category="industry" или в application.industries)
+  if (industries.length > 0) {
+    const lowerIndustries = industries.map((i) => i.toLowerCase());
+    filtered = filtered.filter((p) => {
+      const tagIndustries = p.tags
+        .filter((t) => t.category === "industry")
+        .map((t) => t.tag.toLowerCase());
+      let appIndustries: string[] = [];
+      try { appIndustries = JSON.parse(p.application.industries).map((s: string) => s.toLowerCase()); } catch {}
+      const allIndustries = [...tagIndustries, ...appIndustries];
+      return lowerIndustries.some((ind) => allIndustries.some((a) => a.includes(ind)));
+    });
+  }
+
   // Фильтр по зарплате
   if (salaryMin || salaryMax) {
     const min = salaryMin ? Number(salaryMin) : null;
@@ -67,6 +83,15 @@ export async function GET(req: NextRequest) {
       if (min && num < min) return false;
       if (max && num > max) return false;
       return true;
+    });
+  }
+
+  // Текстовый поиск по должности и тегам
+  if (q) {
+    filtered = filtered.filter((p) => {
+      const pos = (p.application.position || "").toLowerCase();
+      const tagsText = p.tags.map((t) => t.tag.toLowerCase()).join(" ");
+      return pos.includes(q) || tagsText.includes(q);
     });
   }
 

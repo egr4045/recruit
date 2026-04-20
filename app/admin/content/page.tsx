@@ -12,9 +12,12 @@ type Article = {
   createdAt: string;
 };
 
+type Filter = "ALL" | "CHANNELS_LIST" | "ARTICLE";
+
 export default function AdminContentPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<Filter>("ALL");
 
   async function fetchArticles() {
     setLoading(true);
@@ -46,9 +49,11 @@ export default function AdminContentPage() {
     if (res.ok) fetchArticles();
   }
 
+  const filtered = filter === "ALL" ? articles : articles.filter((a) => a.type === filter);
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Контент (SEO)</h1>
           <p className="text-sm text-gray-500 mt-1">Управление статьями и каналами</p>
@@ -61,11 +66,33 @@ export default function AdminContentPage() {
         </Link>
       </div>
 
+      {/* Filter tabs */}
+      <div className="flex gap-2 mb-6">
+        {(["ALL", "ARTICLE", "CHANNELS_LIST"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-1.5 rounded-xl text-sm font-medium transition-all ${
+              filter === f
+                ? "bg-black text-white"
+                : "bg-white border border-gray-200 text-gray-600 hover:border-gray-400"
+            }`}
+          >
+            {f === "ALL" ? "Все" : f === "ARTICLE" ? "Статьи" : "Каналы"}
+            {f !== "ALL" && (
+              <span className="ml-1.5 text-xs opacity-60">
+                {articles.filter((a) => a.type === f).length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="text-center py-20 text-gray-400">Загрузка...</div>
-      ) : articles.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-gray-400 border border-dashed rounded-xl">
-          Нет статей. Создайте первую!
+          {articles.length === 0 ? "Нет статей. Создайте первую!" : "Нет материалов в этой категории."}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -81,12 +108,20 @@ export default function AdminContentPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {articles.map((article) => (
+              {filtered.map((article) => (
                 <tr key={article.id} className="hover:bg-gray-50/50">
                   <td className="px-6 py-4 font-medium text-gray-900">{article.title}</td>
                   <td className="px-6 py-4 text-gray-400">{article.slug}</td>
                   <td className="px-6 py-4">
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">{article.type}</span>
+                    <span
+                      className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                        article.type === "CHANNELS_LIST"
+                          ? "bg-[#2AABEE]/10 text-[#2AABEE]"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {article.type === "CHANNELS_LIST" ? "Каналы" : "Статья"}
+                    </span>
                   </td>
                   <td className="px-6 py-4">{article.views}</td>
                   <td className="px-6 py-4">

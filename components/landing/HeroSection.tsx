@@ -42,7 +42,7 @@ const BUTTONS: LandingButton[] = [
   {
     label: "Каналы",
     sublabel: "Рекомендуемые ресурсы для поиска",
-    href: "#",
+    href: "/channels",
   },
 ];
 

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { WysiwygEditor } from "@/components/admin/WysiwygEditor";
+import { ChannelEntriesEditor } from "@/components/admin/ChannelEntriesEditor";
 
 type Article = {
   id: number;
@@ -67,6 +68,10 @@ export default function ArticleEditorPage({ params }: { params: { id: string } }
     } else {
       alert("Сохранено!");
     }
+  }
+
+  function handleTypeChange(newType: string) {
+    setData({ ...data, type: newType, content: newType === "CHANNELS_LIST" ? "[]" : "" });
   }
 
   const inputClass =
@@ -137,15 +142,15 @@ export default function ArticleEditorPage({ params }: { params: { id: string } }
         </div>
 
         <div>
-           <label className="block text-sm font-medium text-gray-800 mb-1">Тип контента</label>
-           <select
-              value={data.type || "ARTICLE"}
-              onChange={(e) => setData({ ...data, type: e.target.value })}
-              className={inputClass}
-           >
-              <option value="ARTICLE">Обычная статья</option>
-              <option value="CHANNELS_LIST">Подборка каналов</option>
-           </select>
+          <label className="block text-sm font-medium text-gray-800 mb-1">Тип контента</label>
+          <select
+            value={data.type || "ARTICLE"}
+            onChange={(e) => handleTypeChange(e.target.value)}
+            className={inputClass}
+          >
+            <option value="ARTICLE">Обычная статья</option>
+            <option value="CHANNELS_LIST">Подборка каналов</option>
+          </select>
         </div>
 
         <div>
@@ -160,13 +165,22 @@ export default function ArticleEditorPage({ params }: { params: { id: string } }
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-800 mb-2">Содержимое (редактор)</label>
-          <div className="border border-gray-200 rounded-xl overflow-hidden pb-10">
-            <WysiwygEditor
-              value={data.content || ""}
+          <label className="block text-sm font-medium text-gray-800 mb-2">
+            {data.type === "CHANNELS_LIST" ? "Каналы в подборке" : "Содержимое (редактор)"}
+          </label>
+          {data.type === "CHANNELS_LIST" ? (
+            <ChannelEntriesEditor
+              value={data.content || "[]"}
               onChange={(val) => setData({ ...data, content: val })}
             />
-          </div>
+          ) : (
+            <div className="border border-gray-200 rounded-xl overflow-hidden pb-10">
+              <WysiwygEditor
+                value={data.content || ""}
+                onChange={(val) => setData({ ...data, content: val })}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

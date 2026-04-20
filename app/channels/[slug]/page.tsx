@@ -4,12 +4,13 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { ChannelEntryCard, type ChannelEntry } from "@/components/channels/ChannelEntryCard";
 
 interface Params {
   params: { slug: string };
 }
 
-export const revalidate = 60; // ISR cache
+export const revalidate = 60;
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const article = await prisma.seoArticle.findUnique({
@@ -32,12 +33,20 @@ export default async function ArticlePage({ params }: Params) {
 
   if (!article) notFound();
 
-  // Fire and forget view incrementer (can be done since ISR will cache the HTML output, 
-  // but it'll increment each time ISR evaluates. Good enough proxy).
   prisma.seoArticle.update({
     where: { id: article.id },
     data: { views: { increment: 1 } },
   }).catch(() => {});
+
+  let channelEntries: ChannelEntry[] = [];
+  if (article.type === "CHANNELS_LIST") {
+    try {
+      const parsed = JSON.parse(article.content);
+      if (Array.isArray(parsed)) channelEntries = parsed;
+    } catch {
+      // legacy HTML content — fall through to prose render
+    }
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 py-12 px-4">
@@ -65,10 +74,21 @@ export default async function ArticlePage({ params }: Params) {
             </div>
           </header>
 
-          <div
-            className="prose prose-lg prose-blue max-w-none text-gray-700 prose-headings:text-gray-900 prose-a:text-[#2AABEE]"
-            dangerouslySetInnerHTML={{ __html: article.content }}
-          />
+          {article.type === "CHANNELS_LIST" && channelEntries.length > 0 ? (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-400 mb-6 text-center">
+                {channelEntries.length} {channelEntries.length === 1 ? "канал" : channelEntries.length < 5 ? "канала" : "каналов"} в подборке
+              </p>
+              {channelEntries.map((entry, i) => (
+                <ChannelEntryCard key={i} entry={entry} />
+              ))}
+            </div>
+          ) : (
+            <div
+              className="prose prose-lg prose-blue max-w-none text-gray-700 prose-headings:text-gray-900 prose-a:text-[#2AABEE]"
+              dangerouslySetInnerHTML={{ __html: article.content }}
+            />
+          )}
         </article>
       </div>
     </main>

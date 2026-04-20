@@ -20,6 +20,8 @@ echo "🗄️ Обновляем схему базы данных..."
 DB_URL=$(grep '^DATABASE_URL=' .env | cut -d '=' -f2-)
 # Убираем возможные кавычки
 DB_URL=$(echo $DB_URL | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
+# host.docker.internal резолвится только внутри контейнера — снаружи используем localhost
+DB_URL=$(echo "$DB_URL" | sed 's/host\.docker\.internal/localhost/g')
 
 # Запускаем из директории проекта — там есть node_modules и prisma.config.ts
 if [ ! -f node_modules/.bin/prisma ]; then
